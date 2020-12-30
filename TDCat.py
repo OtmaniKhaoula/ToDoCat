@@ -1,9 +1,11 @@
 import os
+import os.path
 import discord
 from discord.ext import commands
 
 import asyncpg 
 import asyncio
+import ssl
 
 from dotenv import load_dotenv
 load_dotenv()
