@@ -1,6 +1,7 @@
 import discord
 from discord.ext import commands
 import asyncio
+import random 
 
 class ModificationCommands(commands.Cog):
     def __init__(self, bot):
@@ -131,7 +132,7 @@ class ModificationCommands(commands.Cog):
         await ctx.send("{} successfully deleted".format(task))
     
     @commands.command(aliases=["achieved", "finished"], case_insensitive=True)
-    async def done(self, ctx, liste=None, task=None):
+    async def done(self, ctx, task=None ,liste=None):
         if not liste or not task:
             await ctx.send("Please specify the task you achieved\n Enter: $done [liste name] [task name]")
             return
@@ -150,11 +151,15 @@ class ModificationCommands(commands.Cog):
             await self.bot.con.execute("UPDATE listes SET nb_achieved=$1 WHERE id_liste=$2", liste_nb_achieved+1, id_liste)
             #update users stats
             users = await self.bot.con.fetch("SELECT id_user FROM main WHERE id_liste=$1", id_liste)
-            for id_user in users:
+            for id_user in set(users):
                 user = await self.bot.con.fetchrow("SELECT * FROM users WHERE id_user=$1", id_user[0])
                 await self.bot.con.execute("UPDATE users SET nb_achieved=$1 WHERE id_user=$2", user['nb_achieved']+1, id_user[0])
-            
-            await ctx.send("Congratulation on achieving your task :partying_face:")
+            embed = discord.Embed(
+                title="Congratulation on achieving your task :partying_face:",
+                color=random.randint(0, 0xffffff)
+            )
+            embed.set_image(url="https://media1.tenor.com/images/4598a55e2ed5c0f8a0d7680695f6c7a1/tenor.gif")
+            await ctx.send(embed=embed)
             return
 
         if stat_task:

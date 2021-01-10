@@ -1,5 +1,6 @@
 import discord
 from discord.ext import commands
+import random
 
 class ShowCommands(commands.Cog):
     def __init__(self, bot):
@@ -7,16 +8,23 @@ class ShowCommands(commands.Cog):
 
     @commands.command(aliases=['p'], case_insensitive=True)
     async def profil(self, ctx):
-        nb_listes = await self.bot.con.fetchval("SELECT nb_lists FROM users WHERE id_user=$1", ctx.author.id)
-        nb_tasks = await self.bot.con.fetchval("SELECT nb_tasks FROM users WHERE id_user=$1", ctx.author.id)
-
-        msg ="{}\n listes:{} \n tasks:{}".format(ctx.author, nb_listes, nb_tasks)
-        await ctx.send(msg)
+        user_stats = await self.bot.con.fetchrow("SELECT nb_lists, nb_tasks, nb_achieved FROM users WHERE id_user=$1", ctx.author.id)
+        if(user_stats): msg ="listes:{} \n tasks:{} \n achived:{}".format(user_stats[0], user_stats[1], user_stats[2])
+        else: msg ="listes: 0 \n tasks: 0 \n achived: 0"
+        title= str(ctx.author)
+        embed = discord.Embed(
+            title = title,
+            description= msg,
+            color= random.randint(0, 0xffffff)
+        )
+        embed.set_footer(text='Always deliver more than expected ! mew ^.^')
+        embed.set_thumbnail(url=f"{ctx.author.avatar_url}")
+        await ctx.send(embed=embed)
 
     @commands.command(aliases=["s"], case_insensitive=True)
     async def show(self, ctx, liste=None):
         if not liste:
-            embed = discord.Embed(title="Your lists", color=discord.Colour.green())
+            embed = discord.Embed(title="Your lists", color=random.randint(0, 0xffffff))
             listes = await self.bot.con.fetch("SELECT l_name,nb_achieved,nb_tasks FROM main NATURAL JOIN listes WHERE id_user= $1", ctx.author.id)
             msg = ""
             for liste in set(listes): #set to have unique values
@@ -28,7 +36,7 @@ class ShowCommands(commands.Cog):
             if not embed.fields:
                 embed.add_field(name="oupsi", value="You have no lists")
             
-            embed.set_footer(text="keep the good work up! moew ;)")
+            embed.set_footer(text="Good things happen when you set your priorities straight ! mew ^.^")
             await ctx.send(embed=embed)
             return
         
@@ -47,18 +55,18 @@ class ShowCommands(commands.Cog):
         msg = ""
         for task in set(tasks):
             if task[1]:
-                msg = msg + "~~"+task[0]+"~~" + "\n" 
+                msg = msg + "~~"+task[0]+"~~" + "  :white_check_mark: \n" 
             else:                
                 msg = msg + task[0] + "\n" 
 
-        embed = discord.Embed(title="{} tasks".format(liste), description=msg, color=discord.Colour.green())
+        embed = discord.Embed(title="{} tasks".format(liste), description=msg, color=random.randint(0, 0xffffff))
 
 
             
         if not embed.description:
             embed.add_field(name="oupsi", value="You have no tasks in that list")
 
-        embed.set_footer(text="keep the good work up! moew ;)")
+        embed.set_footer(text="Happiness inspires productivity ! mew ^.^")
         await ctx.send(embed=embed)
 
     @commands.command(help='best command ever', case_insensitive=True)
