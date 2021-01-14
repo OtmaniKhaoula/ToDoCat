@@ -21,10 +21,7 @@ async def on_ready():
     print('We have logged in as {} {}'.format(bot.user.name, bot.user.id))
 
 
-#DEBUT CHANGEMENT
-
 bot.remove_command("help")
-
 
 
 bot.loop.run_until_complete(create_db_pool())

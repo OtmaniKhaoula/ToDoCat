@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 import asyncio
 import random 
+from .ShowCommands import *
 
 class ModificationCommands(commands.Cog):
     def __init__(self, bot):
@@ -81,7 +82,8 @@ class ModificationCommands(commands.Cog):
         l_name = await self.bot.con.fetchrow("SELECT * FROM main WHERE id_user=$1 AND l_name=$2", ctx.author.id, liste.lower())
         #if not _name for user, create list and add task
         if not l_name:
-            await self.create_liste(ctx.author.id, ctx.message.id,liste, ctx.author.id, False, False)
+            await ctx.send("List {} doesn't exist, type !create {} to create the list.".format(liste, liste))
+            return
 
         t_exists = await self.bot.con.fetch("SELECT id_task FROM main WHERE id_user=$1 AND l_name=$2 AND t_name=$3", ctx.author.id, liste.lower(), task.lower())
 
@@ -92,6 +94,8 @@ class ModificationCommands(commands.Cog):
         #add task to an existing liste
         await self.add_task(ctx.author.id, liste, ctx.message.id, task)
         await ctx.send('{} successfully added to {} !'.format(task, liste))
+        await ShowCommands.show(self, ctx, liste)
+
 
     @commands.command(aliases=["remove", "del"], case_insensitive=True)
     async def delete(self, ctx,liste=None,task=None):
@@ -130,6 +134,8 @@ class ModificationCommands(commands.Cog):
 
         await self.delete_task(id_task, id_liste, ctx.author.id)
         await ctx.send("{} successfully deleted".format(task))
+        await ShowCommands.show(self, ctx, liste)
+
     
     @commands.command(aliases=["achieved", "finished"], case_insensitive=True)
     async def done(self, ctx, task=None ,liste=None):
@@ -160,6 +166,7 @@ class ModificationCommands(commands.Cog):
             )
             embed.set_image(url="https://media1.tenor.com/images/4598a55e2ed5c0f8a0d7680695f6c7a1/tenor.gif")
             await ctx.send(embed=embed)
+            await ShowCommands.show(self, ctx, liste)
             return
 
         if stat_task:
