@@ -26,7 +26,7 @@ bot.remove_command("help")
 
 bot.loop.run_until_complete(create_db_pool())
 
-extensions = ['Cogs.ShowCommands', 'Cogs.ModificationCommands', "Cogs.HelpCommands"]
+extensions = ['Cogs.ShowCommands', 'Cogs.ModificationCommands', 'Cogs.HelpCommands', 'Cogs.TimeCommands']
 
 if __name__ == '__main__':
     for ext in extensions:

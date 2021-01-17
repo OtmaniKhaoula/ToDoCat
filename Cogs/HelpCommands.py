@@ -6,7 +6,9 @@ import random
 class HelpCommands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        
+
+    ''' Commands '''
+    
     @commands.group(invoke_without_command=True)
     async def help(self, ctx):
         em = discord.Embed(title= "Help", description="Use !help <command> for extended infos", color=random.randint(0, 0xffffff))

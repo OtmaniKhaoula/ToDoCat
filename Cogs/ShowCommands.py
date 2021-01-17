@@ -5,7 +5,8 @@ import random
 class ShowCommands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-
+        
+    ''' Commands '''
     @commands.command(aliases=['p'], case_insensitive=True)
     async def profil(self, ctx):
         user_stats = await self.bot.con.fetchrow("SELECT nb_lists, nb_tasks, nb_achieved FROM users WHERE id_user=$1", ctx.author.id)
@@ -69,24 +70,16 @@ class ShowCommands(commands.Cog):
         embed.set_footer(text="Happiness inspires productivity ! mew ^.^")
         await ctx.send(embed=embed)
 
-    @commands.command(help='best command ever', case_insensitive=True)
+    @commands.command(case_insensitive=True)
     async def green(self, ctx):
         await ctx.send(':green_heart:')
-            #commande to add list ($create)
-            
-            #command to delete a list
+            # add remembers for lists
+            # add events reminders
+            # tasks indexation
+            # propose to del list once all tasks are done ??
+            # congratulation message if you achieve all tasks of a list !!!
+            # think of ways to make the bot more attractive, and easy to use
 
-            #command to delete a task
-
-            #command to show a list
-            
-            #command to set task status (current, done or not)
-            
-            #help command
-
-            #send to do lists to other members ! (DM)
-
-            #multiplayer to do liste
 
 def setup(bot):
     bot.add_cog(ShowCommands(bot))

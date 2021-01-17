@@ -7,7 +7,9 @@ from .ShowCommands import *
 class ModificationCommands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-    
+
+    ''' Commands '''
+
     @commands.command(aliases=['c'], case_insensitive=True)
     async def create(self, ctx, liste=None, *members: discord.Member):
         if not liste:
@@ -21,7 +23,7 @@ class ModificationCommands(commands.Cog):
             return
 
         #check if the main user exists
-        user = await self.check_user(ctx.author.id)
+        user = await self.check_user(ctx.author)
 
         #set the mode
         party = False
@@ -69,7 +71,7 @@ class ModificationCommands(commands.Cog):
 
         await ctx.send("{} \nParty List {} successfully updated! {} users added".format(msg, liste.lower(), len(members) - not_added_member))
 
-    @commands.command(aliases=['a'], help='$add "task_name" "list_name add a task to a to do list', case_insensitive=True)
+    @commands.command(aliases=['a'], case_insensitive=True)
     async def add(self, ctx, task=None, liste=None):
         if(task == None or liste == None):
             await ctx.send('Please write the commands as such :\n $add "task_name" "list_name"')
@@ -77,11 +79,17 @@ class ModificationCommands(commands.Cog):
         liste = liste.lower()
         task = task.lower()
     
-        user = await self.check_user(ctx.author.id)
+        user = await self.check_user(ctx.author)
 
-        l_name = await self.bot.con.fetchrow("SELECT * FROM main WHERE id_user=$1 AND l_name=$2", ctx.author.id, liste.lower())
-        #if not _name for user, create list and add task
-        if not l_name:
+        id_liste = await self.bot.con.fetchval("SELECT id_liste FROM main WHERE id_user=$1 AND l_name=$2", ctx.author.id, liste.lower())
+
+        #check if rights ok
+        if not await self.check_rights(ctx, id_liste):
+            await ShowCommands.show(self, ctx, liste)
+            return 
+
+        #if not id_liste for user, don't add task
+        if not id_liste:
             await ctx.send("List {} doesn't exist, type !create {} to create the list.".format(liste, liste))
             return
 
@@ -91,24 +99,33 @@ class ModificationCommands(commands.Cog):
             await ctx.send("Task {} already exists in {}".format(task,liste))    
             return
 
-        #add task to an existing liste
+        #add task to existing list
         await self.add_task(ctx.author.id, liste, ctx.message.id, task)
         await ctx.send('{} successfully added to {} !'.format(task, liste))
         await ShowCommands.show(self, ctx, liste)
-
-
+    
     @commands.command(aliases=["remove", "del"], case_insensitive=True)
-    async def delete(self, ctx,liste=None,task=None):
-        if not liste:
-            await ctx.send("Enter the liste, task you want to remove")
-            return
-
-        id_liste = await self.bot.con.fetchval("SELECT id_liste FROM main WHERE id_user=$1 AND l_name=$2", ctx.author.id, liste.lower())
-        if not id_liste:
-            await ctx.send(" You have no liste named: {} ".format(liste))
-            return
-
+    async def delete(self, ctx, task=None, liste=None):
         if not task:
+            await ctx.send("Enter the task, list you want to remove")
+            return
+
+        if not liste:
+            substitue = task
+        else:
+            substitue = liste
+
+        id_liste = await self.bot.con.fetchval("SELECT id_liste FROM main WHERE id_user=$1 AND l_name=$2", ctx.author.id, substitue.lower())
+        if not id_liste:
+            await ctx.send(" You have no liste named: {} ".format(substitue))
+            return
+
+        if not await self.check_rights(ctx, id_liste):
+            await ShowCommands.show(self, ctx, substitue)
+            return
+
+        if not liste:
+            liste = task
             await ctx.send("Are you sure you want to remove the entire {} liste ? type y or n".format(liste))
             try:
                 msg = await self.bot.wait_for(
@@ -118,7 +135,7 @@ class ModificationCommands(commands.Cog):
                                         and message.channel == ctx.channel
                 )
                 if msg.content.lower() == "y" or msg.content.lower() == "yes":
-                    await self.delete_liste(ctx, id_liste, ctx.author.id, liste) #DONNER DIRECTEMENT ID LISTE
+                    await self.delete_liste(ctx, id_liste, ctx.author.id, liste) #Give Directly ID LIST
                     return
 
                 await ctx.send("{} has not been deleted".format(liste))
@@ -132,34 +149,26 @@ class ModificationCommands(commands.Cog):
             await ctx.send(" You have no task named: {} ".format(task))
             return
 
-        await self.delete_task(id_task, id_liste, ctx.author.id)
+        await self.delete_task(id_task, id_liste)
         await ctx.send("{} successfully deleted".format(task))
         await ShowCommands.show(self, ctx, liste)
 
-    
     @commands.command(aliases=["achieved", "finished"], case_insensitive=True)
-    async def done(self, ctx, task=None ,liste=None):
+    async def done(self, ctx, task=None, liste=None):
         if not liste or not task:
             await ctx.send("Please specify the task you achieved\n Enter: $done [liste name] [task name]")
             return
         
-        #VERIFIER SI TASK LISTE EXISTS ;)
+        id_liste = await self.bot.con.fetchval("SELECT id_liste FROM main WHERE id_user=$1 AND l_name=$2", ctx.author.id, liste.lower())
+        if not await self.check_rights(ctx, id_liste):
+            await ShowCommands.show(self, ctx, liste)
+            return
 
         #set task to achieved
-        stat_task = await self.check_task(ctx.author.id, liste, task)
+        stat_task = await self.check_task(id_liste, task)
 
         if stat_task and not stat_task[1]:
-            await self.bot.con.execute("UPDATE tasks SET achieved=True WHERE id_task=$1", stat_task[0])
-
-            #update lists stats
-            id_liste = await self.bot.con.fetchval("SELECT id_liste FROM main WHERE id_user=$1 AND l_name=$2", ctx.author.id, liste.lower())
-            liste_nb_achieved = await self.bot.con.fetchval("SELECT nb_achieved FROM listes WHERE id_liste=$1", id_liste)
-            await self.bot.con.execute("UPDATE listes SET nb_achieved=$1 WHERE id_liste=$2", liste_nb_achieved+1, id_liste)
-            #update users stats
-            users = await self.bot.con.fetch("SELECT id_user FROM main WHERE id_liste=$1", id_liste)
-            for id_user in set(users):
-                user = await self.bot.con.fetchrow("SELECT * FROM users WHERE id_user=$1", id_user[0])
-                await self.bot.con.execute("UPDATE users SET nb_achieved=$1 WHERE id_user=$2", user['nb_achieved']+1, id_user[0])
+            await self.update_task(id_liste,stat_task[0])
             embed = discord.Embed(
                 title="Congratulation on achieving your task :partying_face:",
                 color=random.randint(0, 0xffffff)
@@ -175,24 +184,47 @@ class ModificationCommands(commands.Cog):
 
         await ctx.send("Task doesn't exist")
 
-    ''' Database calls '''
-    async def check_user(self,id):
-        user = await self.bot.con.fetch("SELECT * FROM users WHERE id_user=$1", id)
+    ''' Methods '''
+    async def check_rights(self, ctx, id_liste):
+        admin = await self.bot.con.fetchval("SELECT admin FROM listes WHERE id_liste=$1", id_liste)
+        mode = await self.bot.con.fetchval("SELECT mode FROM listes WHERE id_liste=$1", id_liste)
+        party = await self.bot.con.fetchval("SELECT party FROM listes WHERE id_liste=$1", id_liste)
+
+        if mode or admin == ctx.author.id or not party:
+            return True
+        
+        await ctx.send("You don't have the rights to modify that list")
+        return False
+
+    async def check_user(self, author):
+        user = await self.bot.con.fetch("SELECT * FROM users WHERE id_user=$1", author.id)
+        await self.welcome(user, author)
 
         #if not user create a new user
         if not user:
-            await self.bot.con.execute("INSERT INTO users (id_user, nb_tasks, nb_lists,nb_achieved) VALUES ($1,0,0,0)",id)
+            await self.bot.con.execute("INSERT INTO users (id_user, nb_tasks, nb_lists,nb_achieved) VALUES ($1,0,0,0)", author.id)
             
-        return await self.bot.con.fetchrow("SELECT * FROM users WHERE id_user=$1", id)
+        return await self.bot.con.fetchrow("SELECT * FROM users WHERE id_user=$1", author.id)
 
     async def check_liste(self, id, liste):
         return await self.bot.con.fetchval("SELECT id_liste FROM main WHERE id_user=$1 AND l_name=$2", id, liste.lower())
 
-    async def check_task(self, id, liste, task):
-        id_liste = await self.bot.con.fetchval("SELECT id_liste FROM main WHERE id_user=$1 AND l_name=$2", id, liste.lower())
+    async def check_task(self, id_liste, task):
         return await self.bot.con.fetchrow("SELECT id_task, achieved FROM tasks WHERE id_liste=$1 AND t_name=$2", id_liste, task.lower())
 
-    async def create_liste(self,id_user, id_liste, liste, admin, mode, party):
+    async def update_task(self, id_liste, id_task):
+        await self.bot.con.execute("UPDATE tasks SET achieved=True WHERE id_task=$1", id_task)
+
+        #update lists stats
+        liste_nb_achieved = await self.bot.con.fetchval("SELECT nb_achieved FROM listes WHERE id_liste=$1", id_liste)
+        await self.bot.con.execute("UPDATE listes SET nb_achieved=$1 WHERE id_liste=$2", liste_nb_achieved+1, id_liste)
+        #update users stats
+        users = await self.bot.con.fetch("SELECT id_user FROM main WHERE id_liste=$1", id_liste)
+        for id_user in set(users):
+            user = await self.bot.con.fetchrow("SELECT * FROM users WHERE id_user=$1", id_user[0])
+            await self.bot.con.execute("UPDATE users SET nb_achieved=$1 WHERE id_user=$2", user['nb_achieved']+1, id_user[0])
+
+    async def create_liste(self, id_user, id_liste, liste, admin, mode, party):
             #insert list in list
             if id_user == admin:
                 await self.bot.con.execute("INSERT INTO listes (id_liste, nb_tasks, nb_achieved, l_name, admin, mode, party) VALUES ($1,0,0,$2,$3,$4,$5)",id_liste,liste.lower(), admin, mode, party)
@@ -218,11 +250,11 @@ class ModificationCommands(commands.Cog):
                     msg = msg + "Member <@{}> already has a list named {}, she/he hasn't been added to the party\n".format(member.id, liste.capitalize())
                     not_added_member = not_added_member + 1
             elif not author == member.id:
-                await self.check_user(member.id)
+                await self.check_user(member)
                 await self.create_liste(member.id, id_liste, liste.lower(), author, mode, party)
         return (msg, not_added_member)
 
-    async def add_task(self,id_user, liste, id_task, task):
+    async def add_task(self, id_user, liste, id_task, task):
  
             #find id_liste to udapte mains and liste table#
             id_liste = await self.bot.con.fetchval("SELECT id_liste FROM main WHERE id_user=$1 AND l_name=$2", id_user, liste)
@@ -259,9 +291,10 @@ class ModificationCommands(commands.Cog):
 
             await ctx.send("{} successfully deleted".format(liste))
             return
-        await ctx.send("Only the creator of the liste can delete it.\n Enter: $leave [liste name] to leave a party liste")
+        await ctx.send("Only the creator of the liste can delete it.\n Enter: !leave [liste name] to leave a party liste")
 
-    async def delete_task(self,id_task, id_liste, id_user):
+    async def delete_task(self, id_task, id_liste):
+        id_users = await self.bot.con.fetch("SELECT id_user FROM main WHERE id_liste=$1", id_liste)
         await self.bot.con.execute("DELETE FROM tasks WHERE id_task=$1", id_task)
 
         #find liste row and upading the liste's stats
@@ -269,8 +302,9 @@ class ModificationCommands(commands.Cog):
         await self.bot.con.execute("UPDATE listes SET nb_tasks=$1 WHERE id_liste=$2", liste_row['nb_tasks']-1, id_liste)
 
         #find user row and upading the user's stats
-        user = await self.bot.con.fetchrow("SELECT * FROM users WHERE id_user=$1", id_user)
-        await self.bot.con.execute("UPDATE users SET nb_tasks=$1 WHERE id_user=$2", user['nb_tasks']-1, id_user)
+        for all_id_user in set(id_users):
+            user = await self.bot.con.fetchrow("SELECT * FROM users WHERE id_user=$1", all_id_user[0])
+            await self.bot.con.execute("UPDATE users SET nb_tasks=$1 WHERE id_user=$2", user['nb_tasks']-1, all_id_user[0])
 
 
         if liste_row['nb_tasks'] <= 1:
@@ -278,6 +312,17 @@ class ModificationCommands(commands.Cog):
             return
 
         await self.bot.con.execute("DELETE FROM main WHERE id_task=$1", id_task)
+
+    async def welcome(self, user, author):
+        #if not in database yet send a Welcome msg
+        if not user:
+            await author.send("Hi it is just to tell you that you can use the BOT per DM if you want to manage your to do lists in a more cozy place ;)")
+            embed = discord.Embed(
+                title="Shall you have a nice and productive day !",
+                color=random.randint(0, 0xffffff)
+                )
+            embed.set_image(url="https://media1.tenor.com/images/e4d613ee59e79b93e38ec2521cce19e4/tenor.gif")
+            await author.send(embed=embed)
 
 def setup(bot):
     bot.add_cog(ModificationCommands(bot))
