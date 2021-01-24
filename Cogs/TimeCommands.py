@@ -65,7 +65,8 @@ class TimeCommands(commands.Cog):
         nrem = int(time.mktime(t)) + hours*60*60
 
         await self.set_reminders(ctx.author.id, liste, hours*60*60, nrem)
-        await ctx.send("Reminder sucessfully set next reminder in: {} minutes".format(hours))
+        if hours == 1: await ctx.send("Reminder sucessfully set next reminder in: {} hour".format(hours))
+        else : await ctx.send("Reminder sucessfully set next reminder in: {} hours".format(hours))
 
 
     ''' Methods '''

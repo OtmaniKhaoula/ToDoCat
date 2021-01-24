@@ -69,7 +69,7 @@ class HelpCommands(commands.Cog):
     @help.command()
     async def reminder(self, ctx):
         em = discord.Embed(title="reminder", description="sends you a reminder in DM every X hours", color=random.randint(0, 0xffffff))
-        em.add_field(name="**syntax**", value="!reminder [list_name] [hours] \n !reminder [liste_name] [0 or NULL] removes the reminder")
+        em.add_field(name="**syntax**", value="!reminder [list_name] [hours] \n !reminder [list_name] [0 or NULL] removes the reminder")
         await ctx.send(embed = em)
 
 def setup(bot):

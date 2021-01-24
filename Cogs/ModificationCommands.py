@@ -74,7 +74,7 @@ class ModificationCommands(commands.Cog):
     @commands.command(aliases=['a'], case_insensitive=True)
     async def add(self, ctx, task=None, liste=None):
         if(task == None or liste == None):
-            await ctx.send('Please write the commands as such :\n $add "task_name" "list_name"')
+            await ctx.send('Please write the commands as such :\n !add "task_name" "list_name"')
             return
         liste = liste.lower()
         task = task.lower()
