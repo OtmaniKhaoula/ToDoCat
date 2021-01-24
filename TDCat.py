@@ -5,7 +5,6 @@ from discord.ext import commands
 
 import asyncpg 
 import asyncio
-import ssl
 import random
 from dotenv import load_dotenv
 load_dotenv()

@@ -12,9 +12,10 @@ class HelpCommands(commands.Cog):
     @commands.group(invoke_without_command=True)
     async def help(self, ctx):
         em = discord.Embed(title= "Help", description="Use !help <command> for extended infos", color=random.randint(0, 0xffffff))
-        em.add_field(name = "Show", value="profil, show, green", inline=False)
+        em.add_field(name = "Show", value="profil, show, green")
         em.add_field(name = "Create", value="create, add")
         em.add_field(name = "Modify", value="delete, done, join")
+        em.add_field(name = "Reminder", value="reminder")
         await ctx.send(embed = em)
 
     @help.command()
@@ -65,6 +66,11 @@ class HelpCommands(commands.Cog):
         em.add_field(name="**syntax**", value="!join [list_name] [@members] \n the @member will be able to see and modify the party todo list")
         await ctx.send(embed = em)
 
+    @help.command()
+    async def reminder(self, ctx):
+        em = discord.Embed(title="reminder", description="sends you a reminder in DM every X hours", color=random.randint(0, 0xffffff))
+        em.add_field(name="**syntax**", value="!reminder [list_name] [hours] \n !reminder [liste_name] [0 or NULL] removes the reminder")
+        await ctx.send(embed = em)
 
 def setup(bot):
     bot.add_cog(HelpCommands(bot))

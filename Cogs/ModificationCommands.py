@@ -321,7 +321,7 @@ class ModificationCommands(commands.Cog):
                 title="Shall you have a nice and productive day !",
                 color=random.randint(0, 0xffffff)
                 )
-            embed.set_image(url="https://media1.tenor.com/images/e4d613ee59e79b93e38ec2521cce19e4/tenor.gif")
+            embed.set_image(url="https://media1.tenor.com/images/c9e7b31aad80f5dea1eaf363d2c0814d/tenor.gif?itemid=19979337")
             await author.send(embed=embed)
 
 def setup(bot):
