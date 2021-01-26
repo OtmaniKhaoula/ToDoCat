@@ -17,4 +17,4 @@ up comming upgrades:
 
 You can add the bot to your server with this link : https://discord.com/api/oauth2/authorize?client_id=791563159060217878&permissions=2048&scope=bot
 
-It only requires read permission !
+It only requires send message permission !
