@@ -9,7 +9,7 @@
   <li>Set reminders to stay focused ! The bot will remind you your tasks every X hours</li>
 </ul>
 
-up comming upgrades:
+upcoming upgrades:
 <ul>
   <li>Lists and tasks indexation to modify them easily</li>
   <li>Ponctual events reminders</li>
