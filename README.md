@@ -15,6 +15,8 @@ up comming upgrades:
   <li>Ponctual events reminders</li>
 </ul>
 
+You can find the bot on top.gg https://top.gg/bot/791563159060217878 ! Please vote for it if you find it useful.
+
 You can add the bot to your server with this link : https://discord.com/api/oauth2/authorize?client_id=791563159060217878&permissions=2048&scope=bot
 
 It only requires send message permission !
